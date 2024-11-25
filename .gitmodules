@@ -1,0 +1,9 @@
+[submodule "vim/.vim/pack/colorschemes/start/catppuccin.vim"]
+	path = vim/.vim/pack/colorschemes/start/catppuccin.vim
+	url = https://github.com/catppuccin/vim.git
+[submodule "vim/.vim/pack/github/start/copilot.vim"]
+	path = vim/.vim/pack/github/start/copilot.vim
+	url = https://github.com/github/copilot.vim.git
+[submodule "vim/.vim/pack/plugs/start/vim-sensible"]
+	path = vim/.vim/pack/plugs/start/vim-sensible
+	url = https://github.com/tpope/vim-sensible.git
