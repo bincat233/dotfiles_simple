@@ -193,8 +193,10 @@ export PATH=$PATH:$HOME/bin
 
 #自定义函数
 #alias
+alias ls="ls --group-directories-first --color=auto"
 alias ll="ls -l"
 alias la="ls -lAFh"
 alias l='ls -CF'
+alias suv="sudo vim"
 alias kernel="uname -r | sed 's/[1-9]\+[0-9]*\.[0-9]\+\.[0-9]\+-//' | sed 's/[1-9]\+[0-9]*\.[0-9]*\-rc[0-9]\+-//'"
 alias showip='ip -4 addr show scope global | grep inet | awk "{print $2}" | cut -d"/" -f1 | sed "s/    inet //g" | paste -s -d, -'

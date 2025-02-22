@@ -72,8 +72,11 @@ set showmatch " Show matching brackets
 set list " Show invisible characters
 
 " Files and Directories
+if !isdirectory(expand("~/.vim/undo"))
+      call mkdir(expand("~/.vim/undo"), "p")
+endif
 set undofile " 保留历史记录
-set undodir=~/.undodir " 统一历史记录存放位置
+set undodir=~/.vim/undo " 统一历史记录存放位置
 set backupdir=/tmp "设置备份文件目录
 set directory=/tmp "设置临时文件目录
 set path=$PWD/** " 将当前工作路径设为Vim PATH
