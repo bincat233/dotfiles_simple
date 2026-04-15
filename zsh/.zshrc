@@ -70,10 +70,15 @@ setopt AUTO_MENU
 # 开启此选项，补全时会直接选中菜单项
 # setopt MENU_COMPLETE
 #
-fpath+=(~/.bin/comp)
-fpath+=(~/.zfunc)
-autoload -U compinit
-compinit
+fpath=($HOME/.bin/comp $HOME/.zfunc $fpath)
+
+# Speed up compinit by using a cache file
+autoload -Uz compinit
+if [[ -n ${ZDOTDIR:-$HOME}/.zcompdump(#qN.m-1) ]]; then
+    compinit -C
+else
+    compinit
+fi
 
 _force_rehash() {
     ((CURRENT == 1)) && rehash
@@ -171,7 +176,7 @@ zstyle ':completion:*:my-accounts' users-hosts goreliu@192.168.1.{2,3,6,7,9}
 
 #{{{ 和 zsh 无关的配置
 
-path+=(~/.bin)
+path=($HOME/.bin $path)
 # 开启后 exec zsh 后 ctrl + a 异常
 export EDITOR=vim
 export PAGER='less -irf'
@@ -202,8 +207,6 @@ alias suv="sudo vim"
 alias kernel="uname -r | sed 's/[1-9]\+[0-9]*\.[0-9]\+\.[0-9]\+-//' | sed 's/[1-9]\+[0-9]*\.[0-9]*\-rc[0-9]\+-//'"
 alias showip='ip -4 addr show scope global | grep inet | awk "{print $2}" | cut -d"/" -f1 | sed "s/    inet //g" | paste -s -d, -'
 alias vim=nvim
-
-fpath+=~/.zfunc; autoload -Uz compinit; compinit
 
 # Load local configuration
 [[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
