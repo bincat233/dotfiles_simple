@@ -46,15 +46,36 @@ setopt AUTO_MENU              # Show completion menu on successive tab press
 
 # {{{ 3. Keybindings & Widgets
 # ------------------------------------------------------------------------------
+zmodload zsh/terminfo
+
+# Standard keys mapping
+typeset -g -A key
+key=(
+    Up         "${terminfo[kcuu1]}"
+    Down       "${terminfo[kcud1]}"
+    Left       "${terminfo[kcub1]}"
+    Right      "${terminfo[kcuf1]}"
+    Home       "${terminfo[khome]}"
+    End        "${terminfo[kend]}"
+    Insert     "${terminfo[kich1]}"
+    Delete     "${terminfo[kdch1]}"
+    PageUp     "${terminfo[kpp]}"
+    PageDown   "${terminfo[knp]}"
+    BackTab    "${terminfo[kcbt]}"
+)
+
 # Search history based on what's already typed
 autoload -Uz up-line-or-beginning-search down-line-or-beginning-search
 zle -N up-line-or-beginning-search
 zle -N down-line-or-beginning-search
 
-bindkey -- "^[OA" up-line-or-beginning-search
-bindkey -- "^[OB" down-line-or-beginning-search
-bindkey -- "^[[A" up-line-or-beginning-search
-bindkey -- "^[[B" down-line-or-beginning-search
+[[ -n "${key[Up]}"   ]] && bindkey "${key[Up]}"   up-line-or-beginning-search
+[[ -n "${key[Down]}" ]] && bindkey "${key[Down]}" down-line-or-beginning-search
+
+# Standard functional keys
+[[ -n "${key[Delete]}" ]] && bindkey "${key[Delete]}" delete-char
+[[ -n "${key[Home]}"   ]] && bindkey "${key[Home]}"   beginning-of-line
+[[ -n "${key[End]}"    ]] && bindkey "${key[End]}"    end-of-line
 
 # Tab behavior for empty lines
 user-complete() {
