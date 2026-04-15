@@ -70,7 +70,7 @@ setopt AUTO_MENU
 # 开启此选项，补全时会直接选中菜单项
 # setopt MENU_COMPLETE
 #
-fpath=($HOME/.bin/comp $HOME/.zfunc $fpath)
+fpath=($HOME/.zfunc $fpath)
 
 # Speed up compinit by using a cache file
 autoload -Uz compinit
@@ -176,7 +176,6 @@ zstyle ':completion:*:my-accounts' users-hosts goreliu@192.168.1.{2,3,6,7,9}
 
 #{{{ 和 zsh 无关的配置
 
-path=($HOME/.bin $path)
 # 开启后 exec zsh 后 ctrl + a 异常
 export EDITOR=vim
 export PAGER='less -irf'
@@ -193,7 +192,9 @@ export LESS_TERMCAP_ue=$'\E[0m'
 # 命令参数
 export LESS_TERMCAP_us=$'\E[04;36;4m'
 
-export PATH=$PATH:$HOME/bin:$HOME/.local/bin
+# Ensure local bins are in PATH
+path=($HOME/bin $HOME/.local/bin $path)
+export PATH
 #}}}
 #
 
