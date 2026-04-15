@@ -71,6 +71,7 @@ setopt AUTO_MENU
 # setopt MENU_COMPLETE
 #
 fpath+=(~/.bin/comp)
+fpath+=(~/.zfunc)
 autoload -U compinit
 compinit
 
@@ -187,7 +188,7 @@ export LESS_TERMCAP_ue=$'\E[0m'
 # 命令参数
 export LESS_TERMCAP_us=$'\E[04;36;4m'
 
-export PATH=$PATH:$HOME/bin
+export PATH=$PATH:$HOME/bin:$HOME/.local/bin
 #}}}
 #
 
@@ -200,3 +201,9 @@ alias l='ls -CF'
 alias suv="sudo vim"
 alias kernel="uname -r | sed 's/[1-9]\+[0-9]*\.[0-9]\+\.[0-9]\+-//' | sed 's/[1-9]\+[0-9]*\.[0-9]*\-rc[0-9]\+-//'"
 alias showip='ip -4 addr show scope global | grep inet | awk "{print $2}" | cut -d"/" -f1 | sed "s/    inet //g" | paste -s -d, -'
+alias vim=nvim
+
+fpath+=~/.zfunc; autoload -Uz compinit; compinit
+
+# Load local configuration
+[[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
