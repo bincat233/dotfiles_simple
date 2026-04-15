@@ -4,6 +4,10 @@
 DOTFILES_ROOT="$(cd "$(dirname "$0")" && pwd)"
 USE_STOW=false
 
+# Colors
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
 # Check if stow is available
 if command -v stow >/dev/null 2>&1; then
     USE_STOW=true
@@ -24,12 +28,9 @@ show_help() {
     echo "Example:"
     echo "  $0 zsh vim"
     echo "  $0 --all"
-    if [ "$USE_STOW" = true ]; then
-        echo ""
-        echo "Note: GNU Stow detected, using stow for installation."
-    else
-        echo ""
-        echo "Note: GNU Stow not found, falling back to ln -sf."
+
+    if [ "$USE_STOW" = false ]; then
+        echo -e "\n${RED}Note: GNU Stow not found, falling back to manual ln -sf.${NC}" >&2
     fi
 }
 
