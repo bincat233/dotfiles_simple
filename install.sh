@@ -2,6 +2,12 @@
 
 # Base directory
 DOTFILES_ROOT="$(cd "$(dirname "$0")" && pwd)"
+USE_STOW=false
+
+# Check if stow is available
+if command -v stow >/dev/null 2>&1; then
+    USE_STOW=true
+fi
 
 show_help() {
     echo "Usage: $(basename "$0") [OPTIONS] [COMPONENTS...]"
@@ -18,22 +24,37 @@ show_help() {
     echo "Example:"
     echo "  $0 zsh vim"
     echo "  $0 --all"
+    if [ "$USE_STOW" = true ]; then
+        echo ""
+        echo "Note: GNU Stow detected, using stow for installation."
+    else
+        echo ""
+        echo "Note: GNU Stow not found, falling back to ln -sf."
+    fi
 }
 
-install_zsh() {
-    echo "==> Installing zsh configuration..."
-    ln -sfv "$DOTFILES_ROOT/zsh/.zshrc" "$HOME/.zshrc"
-}
+install_component() {
+    local comp=$1
+    echo "==> Installing $comp configuration..."
 
-install_vim() {
-    echo "==> Installing vim configuration..."
-    ln -sfv "$DOTFILES_ROOT/vim/.vimrc" "$HOME/.vimrc"
-    ln -sfv "$DOTFILES_ROOT/vim/.vim" "$HOME/.vim"
-}
-
-install_tmux() {
-    echo "==> Installing tmux configuration..."
-    ln -sfv "$DOTFILES_ROOT/tmux/.tmux.conf" "$HOME/.tmux.conf"
+    if [ "$USE_STOW" = true ]; then
+        # Use stow: target is $HOME, directory is $DOTFILES_ROOT
+        stow --target="$HOME" --dir="$DOTFILES_ROOT" -R "$comp"
+    else
+        # Manual fallback
+        case $comp in
+            zsh)
+                ln -sfv "$DOTFILES_ROOT/zsh/.zshrc" "$HOME/.zshrc"
+                ;;
+            vim)
+                ln -sfv "$DOTFILES_ROOT/vim/.vimrc" "$HOME/.vimrc"
+                ln -sfv "$DOTFILES_ROOT/vim/.vim" "$HOME/.vim"
+                ;;
+            tmux)
+                ln -sfv "$DOTFILES_ROOT/tmux/.tmux.conf" "$HOME/.tmux.conf"
+                ;;
+        esac
+    fi
 }
 
 # No arguments
@@ -71,11 +92,7 @@ done
 
 # Run installation
 for comp in "${COMPONENTS[@]}"; do
-    case $comp in
-        zsh)  install_zsh ;;
-        vim)  install_vim ;;
-        tmux) install_tmux ;;
-    esac
+    install_component "$comp"
 done
 
 echo "Done!"
