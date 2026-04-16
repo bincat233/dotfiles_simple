@@ -69,16 +69,58 @@ autoload -Uz up-line-or-beginning-search down-line-or-beginning-search
 zle -N up-line-or-beginning-search
 zle -N down-line-or-beginning-search
 
-[[ -n "${key[Up]}"   ]] && bindkey "${key[Up]}"   up-line-or-beginning-search
-[[ -n "${key[Down]}" ]] && bindkey "${key[Down]}" down-line-or-beginning-search
+# Bind in both emacs and vi insert modes, with ANSI fallbacks for terminals
+# that do not expose the expected terminfo values.
+bind-history-search() {
+    local seq widget
+    widget="$1"
+    shift
+
+    for seq in "$@"; do
+        [[ -n "$seq" ]] || continue
+        bindkey "$seq" "$widget"
+        bindkey -M emacs "$seq" "$widget"
+        bindkey -M viins "$seq" "$widget"
+    done
+}
+
+bind-history-search up-line-or-beginning-search   "${key[Up]}"   '^[[A' '^[OA'
+bind-history-search down-line-or-beginning-search "${key[Down]}" '^[[B' '^[OB'
 
 # Standard functional keys
 [[ -n "${key[Delete]}" ]] && bindkey "${key[Delete]}" delete-char
 [[ -n "${key[Home]}"   ]] && bindkey "${key[Home]}"   beginning-of-line
 [[ -n "${key[End]}"    ]] && bindkey "${key[End]}"    end-of-line
 
-# Tab behavior for empty lines
+# Expand any run of 3 or more dots inside the current command line so
+# `...`, `....`, etc. behave like OMZ's multdots shortcut.
+expand-dots() {
+    local buffer dots replacement segments
+
+    buffer="${LBUFFER}${RBUFFER}"
+    while [[ $buffer =~ '\.\.\.+' ]]; do
+        dots="${MATCH}"
+        segments=$(( ${#dots} - 1 ))
+        replacement='..'
+        repeat $(( segments - 1 )); do
+            replacement+='/..'
+        done
+        buffer="${buffer/$dots/$replacement}"
+    done
+
+    LBUFFER="$buffer"
+    RBUFFER=""
+}
+zle -N expand-dots
+
+# Expand multdots before completion while keeping the existing custom Tab
+# shortcuts:
+# - empty buffer: start a `cd ` command and complete directories
+# - single space: expand to `!?` for history lookup
+# - anything else: run the normal completion widget
 user-complete() {
+    zle expand-dots
+
     case $BUFFER {
         "" )
             BUFFER="cd "
@@ -97,6 +139,13 @@ user-complete() {
 }
 zle -N user-complete
 bindkey "\t" user-complete
+
+expand-dots-accept-line() {
+    zle expand-dots
+    zle accept-line
+}
+zle -N expand-dots-accept-line
+bindkey "^M" expand-dots-accept-line
 # }}}
 
 # {{{ 4. Completion System
