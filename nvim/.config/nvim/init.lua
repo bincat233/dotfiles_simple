@@ -192,14 +192,11 @@ end
 local osc52_loaded, osc52 = pcall(require, "osc52")
 if osc52_loaded then
   osc52.setup({ silent = true })
-  vim.api.nvim_create_autocmd("TextYankPost", {
-    group = vim.api.nvim_create_augroup("Osc52Clipboard", { clear = true }),
-    callback = function()
-      if vim.v.event.operator == "y" and vim.v.event.regname == "+" then
-        osc52.copy_register("+")
-      end
-    end,
-  })
+  if vim.env.SSH_CONNECTION or vim.env.SSH_TTY then
+    keymap("n", "<leader>y", osc52.copy_operator, { expr = true, desc = "Yank through OSC 52" })
+    keymap("n", "<leader>Y", "<leader>y_", { remap = true, desc = "Yank line through OSC 52" })
+    keymap("x", "<leader>y", osc52.copy_visual, { desc = "Yank through OSC 52" })
+  end
 end
 
 local function setup_mini(module, config)
