@@ -8,6 +8,7 @@ Personal dotfiles targeting **non-development environments** — servers, router
 |-----------|-------|
 | `zsh` | `.zshrc` |
 | `vim` | `.vimrc`, `.vim/` (with submodules) |
+| `nvim` | `.config/nvim/` |
 | `tmux` | `.tmux.conf` |
 | `kitty-terminfo` | `.terminfo/x/xterm-kitty` |
 
@@ -65,3 +66,32 @@ Pull mode behavior:
 - [catppuccin/vim](https://github.com/catppuccin/vim) — colorscheme
 - [github/copilot.vim](https://github.com/github/copilot.vim) — Copilot
 - [tpope/vim-sensible](https://github.com/tpope/vim-sensible) — sensible defaults
+
+## Neovim plugins (mini.deps)
+
+The core Neovim configuration works without plugins. On first launch, the configuration uses Git to bootstrap [mini.nvim](https://github.com/nvim-mini/mini.nvim), then installs optional plugins with its `mini.deps` module:
+
+- [catppuccin/nvim](https://github.com/catppuccin/nvim) — colorscheme
+- [nvim-mini/mini.nvim](https://github.com/nvim-mini/mini.nvim) — lightweight editing enhancements
+
+Neovim 0.9 uses mini.nvim v0.17.0; Neovim 0.10 and newer use the `stable` branch. Existing installations are never updated during startup. Use `:DepsUpdate` to update plugins, `:DepsClean` to remove unused plugins, and `:DepsSnapSave` / `:DepsSnapLoad` to manage snapshots.
+
+If Git or the network is unavailable, Neovim starts with the core configuration and the built-in `habamax` colorscheme.
+
+### Test Neovim without installing it
+
+From the repository root, point Neovim at the tracked configuration and isolated state directories. This bypasses both `~/.config/nvim` and its plugins:
+
+```bash
+# Create a disposable Neovim environment.
+test_root="$(mktemp -d)"
+
+# Load this repository's config without touching local config, plugins, or state.
+XDG_CONFIG_HOME="$PWD/nvim/.config" \
+XDG_DATA_HOME="$test_root/data" \
+XDG_STATE_HOME="$test_root/state" \
+XDG_CACHE_HOME="$test_root/cache" \
+nvim
+```
+
+The first run needs Git and network access to install plugins. The temporary directory can be removed after testing.

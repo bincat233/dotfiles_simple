@@ -1,10 +1,15 @@
 # ==============================================================================
 #  ZSH CONFIGURATION (Single File)
+# !!! DO NOT ADD DEVICE-SPECIFIC CONFIGURATION HERE — IT WILL INTERFERE WITH CROSS-DEVICE SYNC. USE ~/.zshrc.local INSTEAD. !!!
 # ==============================================================================
 
 # {{{ 1. Environment Variables & Paths
 # ------------------------------------------------------------------------------
-export EDITOR='vim'
+if (( $+commands[nvim] )); then
+  export EDITOR='nvim'
+else
+  export EDITOR='vim'
+fi
 export PAGER='less -irf'
 export GREP_COLOR='40;33;01'
 
