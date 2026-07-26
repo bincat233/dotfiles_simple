@@ -7,3 +7,6 @@
 [submodule "vim/.vim/pack/plugs/start/vim-sensible"]
 	path = vim/.vim/pack/plugs/start/vim-sensible
 	url = https://github.com/tpope/vim-sensible.git
+[submodule "vim/.vim/pack/github/start/vim-oscyank"]
+	path = vim/.vim/pack/github/start/vim-oscyank
+	url = https://github.com/ojroques/vim-oscyank.git

@@ -158,8 +158,14 @@ vnoremap <F1> <Nop>
 inoremap jk <esc>
 
 " Copy/Paste to system clipboard
-nmap <leader>y "+y
-vmap <leader>y "+y
+if exists('$SSH_CONNECTION') || exists('$SSH_TTY')
+  nmap <leader>y <Plug>OSCYankOperator
+  nmap <leader>yy <leader>y_
+  vmap <leader>y <Plug>OSCYankVisual
+else
+  nmap <leader>y "+y
+  vmap <leader>y "+y
+endif
 nmap <leader>d "+d
 vmap <leader>d "+d
 nmap <leader>p "+p
