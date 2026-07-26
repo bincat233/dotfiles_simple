@@ -37,8 +37,6 @@ opt.listchars = {
 -- Search and completion
 opt.ignorecase = true
 opt.smartcase = true
-opt.incsearch = true
-opt.hlsearch = true
 opt.completeopt = { "menu", "menuone", "noselect" }
 
 -- Behavior
@@ -49,11 +47,7 @@ opt.splitright = true
 opt.updatetime = 250
 opt.timeoutlen = 300
 
--- Keep persistent undo files out of project directories.
-local undo_dir = vim.fn.stdpath("state") .. "/undo"
-vim.fn.mkdir(undo_dir, "p")
 opt.undofile = true
-opt.undodir = undo_dir .. "//"
 
 local keymap = vim.keymap.set
 
@@ -181,10 +175,31 @@ if bootstrap_mini() then
     if not catppuccin_ok then
       notify_plugin_error("Failed to install Catppuccin; using the fallback theme.\n" .. catppuccin_error)
     end
+
+    local osc52_ok, osc52_error = pcall(MiniDeps.add, with_compat({
+      source = "ojroques/nvim-osc52",
+      name = "nvim-osc52",
+    }))
+    if not osc52_ok then
+      notify_plugin_error("Failed to install nvim-osc52.\n" .. osc52_error)
+    end
     deps_ok = true
   else
     notify_plugin_error("Failed to load mini.deps; starting without optional plugins.\n" .. MiniDeps)
   end
+end
+
+local osc52_loaded, osc52 = pcall(require, "osc52")
+if osc52_loaded then
+  osc52.setup({ silent = true })
+  vim.api.nvim_create_autocmd("TextYankPost", {
+    group = vim.api.nvim_create_augroup("Osc52Clipboard", { clear = true }),
+    callback = function()
+      if vim.v.event.operator == "y" and vim.v.event.regname == "+" then
+        osc52.copy_register("+")
+      end
+    end,
+  })
 end
 
 local function setup_mini(module, config)
