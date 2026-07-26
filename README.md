@@ -74,7 +74,9 @@ The core Neovim configuration works without plugins. On first launch, the config
 - [catppuccin/nvim](https://github.com/catppuccin/nvim) — colorscheme
 - [nvim-mini/mini.nvim](https://github.com/nvim-mini/mini.nvim) — lightweight editing enhancements
 
-Neovim 0.9 uses mini.nvim v0.17.0; Neovim 0.10 and newer use the `stable` branch. Existing installations are never updated during startup. Use `:DepsUpdate` to update plugins, `:DepsClean` to remove unused plugins, and `:DepsSnapSave` / `:DepsSnapLoad` to manage snapshots.
+Neovim 0.9 uses mini.nvim v0.17.0 and Catppuccin v1.11.0; Neovim 0.10 and newer use current stable releases. Existing installations are never updated during startup. Use `:DepsUpdate` to update plugins, `:DepsClean` to remove unused plugins, and `:DepsSnapSave` / `:DepsSnapLoad` to manage snapshots. After changing between Neovim 0.9 and a newer release, run `:DepsUpdateOffline` once to apply the matching plugin versions.
+
+Neovim 0.9 overrides live in `lua/plugin_compat/nvim_0_9.lua`. Add a plugin entry there whenever its current release no longer supports Neovim 0.9; plugin selection remains in `init.lua`.
 
 If Git or the network is unavailable, Neovim starts with the core configuration and the built-in `habamax` colorscheme.
 

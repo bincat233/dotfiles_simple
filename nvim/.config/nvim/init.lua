@@ -104,7 +104,19 @@ vim.cmd.colorscheme("habamax")
 -- Bootstrap mini.nvim, then let mini.deps manage all optional plugins.
 local package_root = vim.fn.stdpath("data") .. "/site"
 local mini_path = package_root .. "/pack/deps/start/mini.nvim"
-local mini_target = vim.fn.has("nvim-0.10") == 1 and "stable" or "v0.17.0"
+local plugin_compat = vim.fn.has("nvim-0.10") == 1 and {} or require("plugin_compat.nvim_0_9")
+
+local function with_compat(spec)
+  return vim.tbl_deep_extend("force", spec, plugin_compat[spec.name] or {})
+end
+
+local mini_spec = with_compat({
+  source = "nvim-mini/mini.nvim",
+  name = "mini.nvim",
+  checkout = "stable",
+  monitor = "main",
+})
+local mini_target = mini_spec.checkout
 
 local function notify_plugin_error(message)
   vim.schedule(function()
@@ -157,21 +169,15 @@ if bootstrap_mini() then
   if require_ok then
     MiniDeps.setup({ path = { package = package_root } })
 
-    local mini_spec = {
-      source = "nvim-mini/mini.nvim",
-      name = "mini.nvim",
-      checkout = mini_target,
-      monitor = mini_target == "stable" and "main" or "stable",
-    }
     local mini_add_ok, mini_add_error = pcall(MiniDeps.add, mini_spec)
     if not mini_add_ok then
       notify_plugin_error("Failed to register mini.nvim with mini.deps.\n" .. mini_add_error)
     end
 
-    local catppuccin_ok, catppuccin_error = pcall(MiniDeps.add, {
+    local catppuccin_ok, catppuccin_error = pcall(MiniDeps.add, with_compat({
       source = "catppuccin/nvim",
       name = "catppuccin",
-    })
+    }))
     if not catppuccin_ok then
       notify_plugin_error("Failed to install Catppuccin; using the fallback theme.\n" .. catppuccin_error)
     end
@@ -197,13 +203,18 @@ setup_mini("mini.surround")
 setup_mini("mini.comment")
 setup_mini("mini.statusline", { use_icons = false })
 
-local theme_ok, catppuccin = pcall(require, "catppuccin")
-if theme_ok then
-  catppuccin.setup({
+local theme_loaded, catppuccin = pcall(require, "catppuccin")
+local theme_ok = false
+if theme_loaded then
+  local theme_error
+  theme_ok, theme_error = pcall(catppuccin.setup, {
     flavour = "mocha",
     term_colors = true,
     integrations = { mini = { enabled = true } },
   })
+  if not theme_ok then
+    notify_plugin_error("Failed to configure Catppuccin; using the fallback theme.\n" .. theme_error)
+  end
 end
 
 local colorscheme = theme_ok and "catppuccin-mocha" or "habamax"
