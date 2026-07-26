@@ -208,7 +208,7 @@ zstyle ':completion:*:processes' command 'ps -au$USER'
 # zstyle: misc
 zstyle ':completion:*:-tilde-:*' group-order 'named-directories' 'path-directories' 'users' 'expand'
 zstyle ':completion:*:ping:*' hosts g.cn www.baidu.com www.google.com
-zstyle ':completion:*:my-accounts' users-hosts goreliu@192.168.1.{2,3,6,7,9}
+zstyle ':completion:*:my-accounts' users-hosts bear@192.168.50.{1,2,3,6,7,9}
 # }}}
 
 # {{{ 5. Prompt & Visuals
