@@ -47,8 +47,9 @@ curl -fsSL https://raw.githubusercontent.com/bincat233/dotfiles_simple/main/inst
 ```
 
 Pull mode behavior:
-- **git available**: shallow-clones to `~/.dotfiles_simple`, then symlinks
-- **no git**: fetches file list via GitHub API, downloads each file with curl (submodule content excluded)
+- Fetches file list via GitHub API, downloads each file directly with curl
+- **git available**: also clones submodules to their target paths
+- **no git**: submodule content is skipped
 
 ### Examples
 

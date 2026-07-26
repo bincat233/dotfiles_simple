@@ -3,9 +3,7 @@
 REPO_OWNER="bincat233"
 REPO_NAME="dotfiles_simple"
 REPO_BRANCH="main"
-REPO_URL="https://github.com/$REPO_OWNER/$REPO_NAME.git"
 PULL_BASE="https://raw.githubusercontent.com/$REPO_OWNER/$REPO_NAME/$REPO_BRANCH"
-CLONE_DEST="$HOME/.dotfiles_simple"
 
 DOTFILES_ROOT="$(cd "$(dirname "$0")" && pwd)"
 
@@ -26,20 +24,20 @@ discover_local_components() {
 discover_remote_components() {
     curl -fsSL "$API_BASE/git/trees/$REPO_BRANCH" \
         | tr '{}' '\n' \
-        | grep '"type":"tree"' \
-        | grep -o '"path":"[^"]*"' \
-        | cut -d'"' -f4
+        | grep '"type"[[:space:]]*:[[:space:]]*"tree"' \
+        | sed 's/.*"path"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/'
 }
 
 # List all files under a component from GitHub API (curl fallback only)
 get_remote_files() {
     local comp=$1
-    curl -fsSL "$API_BASE/git/trees/$REPO_BRANCH?recursive=1" \
+    local response
+    response=$(curl -fsSL "$API_BASE/git/trees/$REPO_BRANCH?recursive=1") || return 1
+    echo "$response" \
         | tr '{}' '\n' \
-        | grep '"type":"blob"' \
-        | grep '"path":"'"$comp"'/' \
-        | grep -o '"path":"[^"]*"' \
-        | cut -d'"' -f4
+        | grep '"type"[[:space:]]*:[[:space:]]*"blob"' \
+        | grep '"path"[[:space:]]*:[[:space:]]*"'"$comp"'/' \
+        | sed 's/.*"path"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/'
 }
 
 show_help() {
@@ -48,9 +46,7 @@ show_help() {
     echo "Options:"
     echo "  --stow       Use GNU Stow to symlink (error if stow not found)"
     echo "  --link       Use ln -sf to symlink"
-    echo "  --pull       Download/clone repo via network (for remote/low-storage envs)"
-    echo "               If git is available: shallow clone to $CLONE_DEST then symlink"
-    echo "               If git is unavailable: curl individual files (limited components)"
+    echo "  --pull       Download files via curl; if git is available, also clone submodules"
     echo "  --all        Install all components (auto-discovered)"
     echo "  --help       Show this help message"
     echo ""
@@ -64,22 +60,55 @@ show_help() {
     echo "  curl -fsSL .../install.sh | bash -s -- --all"
 }
 
+# Parse .gitmodules from remote and clone submodules under a component
+clone_submodules() {
+    local comp=$1
+    local gitmodules
+    gitmodules=$(curl -fsSL "$PULL_BASE/.gitmodules") || return
+
+    local path="" url=""
+    while IFS= read -r line; do
+        line="${line#"${line%%[! ]*}"}"  # trim leading whitespace
+        if [[ "$line" == path* ]]; then
+            path="${line#*= }"
+        elif [[ "$line" == url* ]]; then
+            url="${line#*= }"
+        fi
+        if [ -n "$path" ] && [ -n "$url" ]; then
+            if [[ "$path" == "$comp/"* ]]; then
+                local target="$HOME/${path#"$comp"/}"
+                echo "  submodule $path -> $target"
+                git clone --depth=1 "$url" "$target" \
+                    || { echo -e "  ${RED}ERROR: failed to clone submodule $url${NC}" >&2; return 1; }
+            fi
+            path="" url=""
+        fi
+    done <<< "$gitmodules"
+}
+
 pull_with_curl() {
     local comp=$1
     local files
-    files=$(get_remote_files "$comp")
-
+    if ! files=$(get_remote_files "$comp"); then
+        echo -e "  ${RED}ERROR: failed to fetch file list (network or API error)${NC}" >&2
+        return 1
+    fi
     if [ -z "$files" ]; then
-        echo -e "  ${YELLOW}WARN: no files found for '$comp', skipping${NC}" >&2
-        return
+        echo -e "  ${RED}ERROR: component '$comp' not found in repository${NC}" >&2
+        return 1
     fi
 
     while IFS= read -r file; do
         local target="$HOME/${file#"$comp"/}"
         mkdir -p "$(dirname "$target")"
         echo "  $file -> $target"
-        curl -fsSL "$PULL_BASE/$file" -o "$target"
+        curl -fsSL "$PULL_BASE/$file" -o "$target" \
+            || { echo -e "  ${RED}ERROR: failed to download $file${NC}" >&2; return 1; }
     done <<< "$files"
+
+    if command -v git >/dev/null 2>&1; then
+        clone_submodules "$comp"
+    fi
 }
 
 install_component() {
@@ -87,13 +116,15 @@ install_component() {
     echo "==> Installing $comp..."
 
     if [ "$MODE" = "stow" ]; then
-        stow --target="$HOME" --dir="$DOTFILES_ROOT" -R "$comp"
+        stow --target="$HOME" --dir="$DOTFILES_ROOT" -R "$comp" \
+            || { echo -e "  ${RED}ERROR: stow failed for $comp${NC}" >&2; return 1; }
     else
         while IFS= read -r file; do
             local rel="${file#"$DOTFILES_ROOT/$comp"/}"
             local target="$HOME/$rel"
             mkdir -p "$(dirname "$target")"
-            ln -sfv "$file" "$target"
+            ln -sfv "$file" "$target" \
+                || { echo -e "  ${RED}ERROR: failed to link $file${NC}" >&2; return 1; }
         done < <(find "$DOTFILES_ROOT/$comp" -type f)
     fi
 }
@@ -145,24 +176,9 @@ if [ "$MODE" = "stow" ] && ! command -v stow >/dev/null 2>&1; then
     exit 1
 fi
 
-# Handle pull mode: resolve to git clone or curl fallback
 USE_CURL_FALLBACK=false
 if [ "$MODE" = "pull" ]; then
-    if command -v git >/dev/null 2>&1; then
-        echo "git found, cloning repository..."
-        if [ -d "$CLONE_DEST/.git" ]; then
-            git -C "$CLONE_DEST" pull
-        else
-            git clone --depth=1 "$REPO_URL" "$CLONE_DEST"
-        fi
-        git -C "$CLONE_DEST" submodule update --init --recursive
-        DOTFILES_ROOT="$CLONE_DEST"
-        MODE=$(command -v stow >/dev/null 2>&1 && echo "stow" || echo "link")
-        echo "Switched to $MODE mode from cloned repo at $CLONE_DEST"
-    else
-        echo -e "${YELLOW}WARN: git not found, falling back to curl (limited components)${NC}" >&2
-        USE_CURL_FALLBACK=true
-    fi
+    USE_CURL_FALLBACK=true
 fi
 
 # Discover available components
@@ -207,19 +223,24 @@ if [ ${#COMPONENTS[@]} -eq 0 ]; then
 fi
 
 # Update submodules for local stow/link modes
-if [ "$MODE" != "pull" ] && [ "$USE_CURL_FALLBACK" = false ] && [ "$DOTFILES_ROOT" != "$CLONE_DEST" ]; then
+if [ "$MODE" != "pull" ]; then
     echo "Updating git submodules..."
     git -C "$DOTFILES_ROOT" submodule update --init --recursive
 fi
 
 # Run
+FAILED=0
 for comp in "${COMPONENTS[@]}"; do
     if [ "$USE_CURL_FALLBACK" = true ]; then
         echo "==> Pulling $comp (curl)..."
-        pull_with_curl "$comp"
+        pull_with_curl "$comp" || FAILED=1
     else
-        install_component "$comp"
+        install_component "$comp" || FAILED=1
     fi
 done
 
+if [ "$FAILED" -ne 0 ]; then
+    echo -e "${RED}ERROR: one or more components failed to install${NC}" >&2
+    exit 1
+fi
 echo "Done!"
